@@ -1,23 +1,34 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import sklearn
-
-sklearn.datasets.fetch_openml('mnist_784')
+from sklearn.datasets import fetch_openml
 
 class MNIST:
-    def __init__(self, data_path):
-        self.data_path = data_path
+    N_TRAIN = 60000
+    N_CLASSES = 10
+
+    def __init__(self):
         self.train_images = None
         self.train_labels = None
         self.test_images = None
         self.test_labels = None
 
     def load_data(self):
-        with np.load(self.data_path) as data:
-            self.train_images = data['x_train']
-            self.train_labels = data['y_train']
-            self.test_images = data['x_test']
-            self.test_labels = data['y_test']
+        X, y = fetch_openml('mnist_784', version=1, as_frame=False, return_X_y=True)
+        y = y.astype(np.int64)
+        
+        rng = np.random.default_rng(42)
+        perm = rng.permutation(X.shape[0])
+        X, y = X[perm], y[perm]
+
+        self.train_images = X[:self.N_TRAIN]
+        self.test_images = X[self.N_TRAIN:]
+        self.train_labels = self._one_hot(y[:self.N_TRAIN])
+        self.test_labels = self._one_hot(y[self.N_TRAIN:])
+
+    def _one_hot(self, labels):
+        one_hot = np.zeros((labels.shape[0], self.N_CLASSES), dtype=np.float32)
+        one_hot[np.arange(labels.shape[0]), labels] = 1.0
+        return one_hot
 
     def preprocess_data(self):
         self.train_images = self.train_images.astype(np.float32) / 255.0
@@ -38,13 +49,13 @@ class MNIST:
             self.out = exp / np.sum(exp, axis=1, keepdims=True)
             return self.out
 
-        def backward(self, dA):
-            dX = np.empty_like(dA)
-            for i, (s, d) in enumerate(zip(self.out, dA)):
-                s = s.reshape(-1, 1)
-                jacobian = np.diagflat(s) - s @ s.T
-                dX[i] = jacobian @ d
-            return dX
+        # def backward(self, dA):
+        #     dX = np.empty_like(dA)
+        #     for i, (s, d) in enumerate(zip(self.out, dA)):
+        #         s = s.reshape(-1, 1)
+        #         jacobian = np.diagflat(s) - s @ s.T
+        #         dX[i] = jacobian @ d
+        #     return dX
         
     class CrossEntropyLoss:
         def forward(self, probs, y_true):
@@ -99,8 +110,6 @@ class MNIST:
 
         def backward(self):
             dA = self.loss_fn.backward()
-            # last layer is Softmax; its gradient is fused into CrossEntropyLoss.backward,
-            # so skip straight to the layer before it
             for layer in reversed(self.layers[:-1]):
                 dA = layer.backward(dA)
             return dA
@@ -110,5 +119,44 @@ class MNIST:
                 if isinstance(layer, MNIST.Layer):
                     layer.update(lr)
 
+        def evaluate(self, X, y):
+            preds = self.forward(X)
+            return np.mean(np.argmax(preds, axis=1) == np.argmax(y, axis=1))
+
+        def train(self, X, y, X_test, y_test, epochs, batch_size, lr=0.1):
+            rng = np.random.default_rng(42)
+
+            for epoch in range(epochs):
+                losses = []
+                perm = rng.permutation(X.shape[0])
+                X_shuffled = X[perm]
+                y_shuffled = y[perm]
+
+                for start in range(0, X.shape[0], batch_size):
+                    batch_loss = []
+                    end = start + batch_size
+                    X_batch = X_shuffled[start:end]
+                    y_batch = y_shuffled[start:end]
+
+                    batch_loss.append(self.compute_loss(X_batch, y_batch))
+
+                    self.backward()
+
+                    self.update(lr)
+
+                    losses.append(np.mean(batch_loss))
+
+                
+                if epoch % 10 == 0 or epoch == epochs - 1:
+                    print(f"Epoch {epoch}/{epochs}")
+                    print(np.mean(losses))
+                    print(f"Train eval result: {self.evaluate(X_shuffled, y_shuffled)}")
+                    print(f"Test eval result: {self.evaluate(X_test, y_test)}")
+
 model = MNIST()
+model.load_data()
+model.preprocess_data()
+
+mlp = MNIST.MLP([784, 128, 10])
+mlp.train(model.train_images, model.train_labels, model.test_images, model.test_labels, 200, 128, 5)
 
