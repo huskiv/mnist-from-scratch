@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_openml
 
 class MNIST:
@@ -159,4 +158,3 @@ model.preprocess_data()
 
 mlp = MNIST.MLP([784, 128, 10])
 mlp.train(model.train_images, model.train_labels, model.test_images, model.test_labels, 200, 128, 5)
-
