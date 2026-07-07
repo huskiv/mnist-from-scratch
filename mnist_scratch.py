@@ -122,16 +122,16 @@ class MNIST:
             preds = self.forward(X)
             return np.mean(np.argmax(preds, axis=1) == np.argmax(y, axis=1))
 
-        def train(self, X, y, X_test, y_test, epochs, batch_size, lr=0.1):
+        def train(self, X_train, y_train, X_test, y_test, epochs, batch_size, lr=0.1):
             rng = np.random.default_rng(42)
 
             for epoch in range(epochs):
                 losses = []
-                perm = rng.permutation(X.shape[0])
-                X_shuffled = X[perm]
-                y_shuffled = y[perm]
+                perm = rng.permutation(X_train.shape[0])
+                X_shuffled = X_train[perm]
+                y_shuffled = y_train[perm]
 
-                for start in range(0, X.shape[0], batch_size):
+                for start in range(0, X_train.shape[0], batch_size):
                     batch_loss = []
                     end = start + batch_size
                     X_batch = X_shuffled[start:end]
@@ -157,4 +157,4 @@ model.load_data()
 model.preprocess_data()
 
 mlp = MNIST.MLP([784, 128, 10])
-mlp.train(model.train_images, model.train_labels, model.test_images, model.test_labels, 200, 128, 5)
+mlp.train(model.train_images, model.train_labels, model.test_images, model.test_labels, 100, 128, 100)
