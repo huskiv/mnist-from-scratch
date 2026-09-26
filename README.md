@@ -55,39 +55,6 @@ coursework repo, extracted here with full git history via
 that original -- the math inside `Layer`, `ReLU`, `Softmax`,
 `CrossEntropyLoss`, and `MLP` is otherwise untouched.
 
-1. **Fixed a gradient bug.** The original `Layer.backward` divided
-   `dW`/`db` by the batch size, but the incoming gradient was *already*
-   batch-averaged (it comes from `CrossEntropyLoss.backward()`, which
-   divides by `n` once). That extra division shrank every weight/bias
-   gradient by an additional factor of `1/batch_size` -- confirmed with a
-   standalone script sweeping batch size (ratio of analytic to true
-   gradient came out to exactly `1/n` for `n` in {1, 2, 4, 10}) before
-   touching any code. The original script's `lr=10` was tuned empirically
-   around that bug. With the bug fixed, `lr=10` would apply an update
-   roughly 128x too large (the training batch size), so the default
-   learning rate here is `0.1` -- which also happens to match the
-   original `MLP.train` method's own untouched default parameter value.
-2. **Rewrote data loading**, not the model. The original used
-   `sklearn.datasets.fetch_openml`, which downloads from openml.org and
-   caches outside the repo. `mnist_scratch/data.py` downloads the
-   original four gzipped IDX files from a pinned GitHub mirror commit,
-   verifies them against the official MNIST MD5 checksums, and caches
-   them in `data/raw/` (gitignored -- MNIST is never committed). The
-   seeded shuffle, the 60000/10000 split, one-hot encoding, and /255
-   normalization are copied unchanged from the original
-   `MNIST.load_data` / `MNIST.preprocess_data`.
-3. **Added a global random seed for weight initialization.**
-   `Layer.__init__` uses `np.random.randn` (not a seeded `Generator`), so
-   the original script produced different final weights on every run,
-   even though its two `default_rng(42)` instances (data shuffle, epoch
-   shuffle) were already seeded. `train.py` calls `np.random.seed(42)`
-   once before constructing the model, making the whole run
-   reproducible without changing a line inside `mnist_scratch/`.
-4. **Split one file into a package** (`mnist_scratch/layers.py`,
-   `model.py`, `data.py`) and moved the neural-net classes out of being
-   nested inside the data-loading class -- purely organizational, no
-   logic changed. Added docstrings and type hints throughout.
-
 ## Results
 
 Ran end to end with `python train.py` (no hyperparameter tuning beyond
