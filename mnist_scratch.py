@@ -157,4 +157,4 @@ model.load_data()
 model.preprocess_data()
 
 mlp = MNIST.MLP([784, 128, 10])
-mlp.train(model.train_images, model.train_labels, model.test_images, model.test_labels, 100, 128, 100)
+mlp.train(model.train_images, model.train_labels, model.test_images, model.test_labels, 100, 128, 10)
