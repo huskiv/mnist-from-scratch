@@ -3,11 +3,11 @@
 A multi-layer perceptron trained on MNIST, with backpropagation derived and
 implemented by hand in NumPy: no PyTorch, no TensorFlow, no autograd
 library. I built this to understand backprop at the level of individual
-matrix derivatives, not to build a reusable framework -- there is no
+matrix derivatives, not to build a reusable framework. There is no
 generic computational-graph engine here, and this README does not claim
 one. What exists is four fixed components (an affine layer, ReLU, softmax,
 cross-entropy loss) each with a manually-derived `backward` method, wired
-together for one specific network shape.
+together for one specific network shape. The original file was written entirely by hand. The tests and most of this readme are AI-generated.
 
 ## How it works
 
@@ -49,10 +49,9 @@ Each `Layer` computes its own gradient by chain rule:
 
 ## Deviations from the original script
 
-This project began as a single file (`MNIST_Scratch.py`) written for a
-coursework repo, extracted here with full git history via
+This project began as a single file (`MNIST_Scratch.py`) written as a learning project over the summer, extracted here with full git history via
 `git filter-repo`. Everything below is a deliberate, disclosed change from
-that original -- the math inside `Layer`, `ReLU`, `Softmax`,
+that original. The math inside `Layer`, `ReLU`, `Softmax`,
 `CrossEntropyLoss`, and `MLP` is otherwise untouched.
 
 ## Results
